@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
+/* Force hide Next.js dev indicators */
+nextjs-portal {
+  display: none !important;
+}
+[data-nextjs-toast] {
+  display: none !important;
+}
