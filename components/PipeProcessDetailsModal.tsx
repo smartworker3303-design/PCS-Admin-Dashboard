@@ -15,6 +15,63 @@ export default function PipeProcessDetailsModal({ record, isOpen, onClose }: Pip
     "Coating", "Oven", "DFT", "QC", "Delivery"
   ];
 
+  // Generate realistic mock data based on the record to show the new material breakdown fields in details view
+  const getMockMaterials = (id: string, mainSize: string) => {
+    if (id === "PPS-0041") {
+      return {
+        footage: [
+          { quantity: "2", footage: "60", diameter: '4"' },
+          { quantity: "1", footage: "20", diameter: '2"' }
+        ],
+        welds: [
+          { diameter: '4"', quantity: "3" },
+          { diameter: '2"', quantity: "1" }
+        ],
+        flanges: [
+          { diameter: '4"', series: "150", quantity: "4" },
+          { diameter: '4"', series: "300", quantity: "2" }
+        ],
+        fittings: [
+          { fittingType: "Elbow", diameter: '4"', quantity: "4" },
+          { fittingType: "T", diameter: '2"', quantity: "2" }
+        ]
+      };
+    } else if (id === "PPS-0040") {
+      return {
+        footage: [
+          { quantity: "1", footage: "40", diameter: '2"' }
+        ],
+        welds: [
+          { diameter: '2"', quantity: "2" }
+        ],
+        flanges: [
+          { diameter: '2"', series: "150", quantity: "2" }
+        ],
+        fittings: [
+          { fittingType: "T", diameter: '2"', quantity: "1" }
+        ]
+      };
+    } else {
+      // Default fallback
+      return {
+        footage: [
+          { quantity: "1", footage: "40", diameter: mainSize }
+        ],
+        welds: [
+          { diameter: mainSize, quantity: "2" }
+        ],
+        flanges: [
+          { diameter: mainSize, series: "150", quantity: "2" }
+        ],
+        fittings: [
+          { fittingType: "Elbow", diameter: mainSize, quantity: "2" }
+        ]
+      };
+    }
+  };
+
+  const materials = getMockMaterials(record.id, record.pipeSize || '6"');
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
       {/* Overlay */}
@@ -74,6 +131,92 @@ export default function PipeProcessDetailsModal({ record, isOpen, onClose }: Pip
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100/50">
               <p className="text-[11px] font-semibold text-slate-400 mb-1">Created</p>
               <p className="text-[14px] font-bold text-slate-900">{record.created}</p>
+            </div>
+          </div>
+
+          {/* Material Details Breakdown */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mt-2">
+            <h3 className="text-[13px] font-bold text-slate-800 mb-3.5">Material Breakdown</h3>
+            
+            <div className="space-y-4">
+              {/* Footage */}
+              <div>
+                <span className="text-[11px] font-semibold text-slate-400 block uppercase tracking-wider mb-1.5">Spool Footage</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {materials.footage.map((item, idx) => {
+                    const qtyText = item.quantity ? `${item.quantity}x ` : "";
+                    return (
+                      <div key={idx} className="bg-white border border-slate-100 rounded-lg p-2.5 flex justify-between items-center shadow-sm">
+                        <span className="text-[12px] text-slate-500 font-medium">Diameter: <span className="font-bold text-slate-900">{item.diameter}</span></span>
+                        <span className="text-[13px] font-bold text-blue-600">{qtyText}{item.footage} ft</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Welds */}
+              {materials.welds.length > 0 && (
+                <div>
+                  <span className="text-[11px] font-semibold text-slate-400 block uppercase tracking-wider mb-1.5">Reachable Welds Grinded</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {materials.welds.map((w, idx) => (
+                      <div key={idx} className="bg-white border border-slate-100 rounded-lg p-2.5 flex justify-between items-center shadow-sm">
+                        <span className="text-[12px] text-slate-500 font-medium">Diameter: <span className="font-bold text-slate-900">{w.diameter}</span></span>
+                        <span className="text-[13px] font-bold text-slate-700">Qty: {w.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Flanges */}
+              {materials.flanges && (
+                materials.flanges.some(f => f.quantity || ['150', '300', '600', '900', '1500', '3000'].some(c => (f as any)[`series${c}`]))
+              ) && (
+                <div>
+                  <span className="text-[11px] font-semibold text-slate-400 block uppercase tracking-wider mb-1.5">Flanges</span>
+                  <div className="space-y-1.5">
+                    {materials.flanges.map((flange, idx) => {
+                      if (flange.quantity) {
+                        return (
+                          <div key={idx} className="bg-white border border-slate-100 rounded-lg p-2.5 flex justify-between items-center shadow-sm text-[12px]">
+                            <span className="font-bold text-slate-900">{flange.diameter}</span>
+                            <span className="text-slate-650 font-semibold">{flange.quantity}x #{flange.series}</span>
+                          </div>
+                        );
+                      }
+                      const details: string[] = [];
+                      ['150', '300', '600', '900', '1500', '3000'].forEach(c => {
+                        const qty = (flange as any)[`series${c}`];
+                        if (qty) details.push(`${qty}x #${c}`);
+                      });
+                      if (details.length === 0) return null;
+                      return (
+                        <div key={idx} className="bg-white border border-slate-100 rounded-lg p-2.5 flex justify-between items-center shadow-sm text-[12px]">
+                          <span className="font-bold text-slate-900">{flange.diameter}</span>
+                          <span className="text-slate-650 font-semibold">{details.join(', ')}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Fittings */}
+              {materials.fittings.length > 0 && (
+                <div>
+                  <span className="text-[11px] font-semibold text-slate-400 block uppercase tracking-wider mb-1.5">Fittings</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {materials.fittings.map((fitting, idx) => (
+                      <div key={idx} className="bg-white border border-slate-100 rounded-lg p-2.5 flex justify-between items-center shadow-sm">
+                        <span className="text-[12px] text-slate-500 font-medium">{fitting.fittingType} (<span className="font-semibold text-slate-900">{fitting.diameter}</span>)</span>
+                        <span className="text-[13px] font-bold text-slate-700">Qty: {fitting.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

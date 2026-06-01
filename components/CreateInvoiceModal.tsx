@@ -76,7 +76,9 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
             <div>
               <label className="block text-[12px] font-medium text-slate-700 mb-1.5">Footage (ft)</label>
               <input 
-                type="text" 
+                type="number" 
+                min="0"
+                step="any"
                 placeholder="0"
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-[13px] focus:outline-none focus:border-blue-500 transition-colors placeholder:text-slate-600"
               />
@@ -85,7 +87,9 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
             <div>
               <label className="block text-[12px] font-medium text-slate-700 mb-1.5">Flanges (ea)</label>
               <input 
-                type="text" 
+                type="number" 
+                min="0"
+                step="1"
                 placeholder="0"
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-[13px] focus:outline-none focus:border-blue-500 transition-colors placeholder:text-slate-600"
               />
@@ -93,7 +97,9 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
             <div>
               <label className="block text-[12px] font-medium text-slate-700 mb-1.5">Fittings (ea)</label>
               <input 
-                type="text" 
+                type="number" 
+                min="0"
+                step="1"
                 placeholder="0"
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-[13px] focus:outline-none focus:border-blue-500 transition-colors placeholder:text-slate-600"
               />

@@ -16,7 +16,7 @@ import {
 
 export default function Dashboard() {
   return (
-    <div className="p-4 md:p-6 lg:p-8">
+    <div className="p-4 md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>

@@ -249,7 +249,11 @@ export default function Sidebar({
                       <Link
                         href={item.href}
                         title={isCollapsed ? item.name : undefined}
-                        className={`flex items-center px-3 py-2 rounded-lg text-sm hover:bg-white/5 hover:text-white transition-colors ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+                        className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+                          isActive 
+                            ? 'bg-blue-600 text-white font-medium' 
+                            : 'hover:bg-white/5 hover:text-white'
+                        } ${isCollapsed ? 'justify-center' : 'justify-between'}`}
                       >
                         <div className="flex items-center">
                           <item.icon size={18} className={`${isCollapsed ? '' : 'mr-3'} ${isActive ? 'text-white' : 'text-slate-400'}`} />
