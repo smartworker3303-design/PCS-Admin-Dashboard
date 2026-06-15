@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Check, ChevronRight, ArrowRight, Plus } from "lucide-react";
 
 interface NewReceivingModalProps {
@@ -6,8 +6,150 @@ interface NewReceivingModalProps {
   onClose: () => void;
 }
 
+interface ClientRep {
+  name: string;
+  phone: string;
+  email: string;
+}
+
+interface ClientCompany {
+  name: string;
+  companyName: string;
+  phone: string;
+  email: string;
+  reps: ClientRep[];
+}
+
+const CLIENT_COMPANIES: ClientCompany[] = [
+  {
+    name: "ABC Steel Corp",
+    companyName: "ABC Steel Corporation",
+    phone: "+1 (713) 555-0142",
+    email: "contact@abcsteel.com",
+    reps: [
+      { name: "John Smith", phone: "+1 (713) 555-0142", email: "jsmith@abcsteel.com" },
+      { name: "Mike R. (Accounts Payable)", phone: "+1 (713) 555-0200", email: "mikr@abcsteelcorp.com" }
+    ]
+  },
+  {
+    name: "Metro Fab LLC",
+    companyName: "Metro Fabrication LLC",
+    phone: "+1 (214) 555-0238",
+    email: "lwang@metrofab.com",
+    reps: [
+      { name: "Lisa Wang", phone: "+1 (214) 555-0238", email: "lwang@metrofab.com" },
+      { name: "Sarah Connor", phone: "+1 (214) 555-9000", email: "sconnor@metrofab.com" }
+    ]
+  },
+  {
+    name: "Gulf Coast Ind.",
+    companyName: "Gulf Coast Industries",
+    phone: "+1 (713) 555-0374",
+    email: "mdavis@gulfcoast.com",
+    reps: [
+      { name: "Mark Davis", phone: "+1 (713) 555-0374", email: "mdavis@gulfcoast.com" },
+      { name: "James Dean", phone: "+1 (713) 555-7777", email: "jdean@gulfcoast.com" }
+    ]
+  },
+  {
+    name: "Lone Star Mfg",
+    companyName: "Lone Star Manufacturing",
+    phone: "+1 (512) 555-0491",
+    email: "achen@lonestar.com",
+    reps: [
+      { name: "Amy Chen", phone: "+1 (512) 555-0491", email: "achen@lonestar.com" },
+      { name: "Bob Dylan", phone: "+1 (512) 555-8888", email: "bdylan@lonestar.com" }
+    ]
+  },
+  {
+    name: "Tex-Mex Metals",
+    companyName: "Tex-Mex Metals Inc.",
+    phone: "+1 (210) 555-0156",
+    email: "cruiz@texmex.com",
+    reps: [
+      { name: "Carlos Ruiz", phone: "+1 (210) 555-0156", email: "cruiz@texmex.com" }
+    ]
+  },
+  {
+    name: "Iron Works TX",
+    companyName: "Iron Works Texas",
+    phone: "+1 (713) 555-0627",
+    email: "blee@ironworks.com",
+    reps: [
+      { name: "Bobby Lee", phone: "+1 (713) 555-0627", email: "blee@ironworks.com" }
+    ]
+  },
+  {
+    name: "Southern Steels",
+    companyName: "Southern Steels Corp",
+    phone: "+1 (214) 555-0783",
+    email: "jpark@southernsteel.com",
+    reps: [
+      { name: "Jennifer Park", phone: "+1 (214) 555-0783", email: "jpark@southernsteel.com" }
+    ]
+  },
+  {
+    name: "Coastal Pipeline",
+    companyName: "Coastal Pipeline Services",
+    phone: "+1 (713) 555-0899",
+    email: "dbrown@coastal.com",
+    reps: [
+      { name: "David Brown", phone: "+1 (713) 555-0899", email: "dbrown@coastal.com" }
+    ]
+  }
+];
+
 export default function NewReceivingModal({ isOpen, onClose }: NewReceivingModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Form interactive states
+  const [selectedClientIndex, setSelectedClientIndex] = useState(0);
+  const [companyName, setCompanyName] = useState("");
+  const [companyPhone, setCompanyPhone] = useState("");
+  const [companyEmail, setCompanyEmail] = useState("");
+  
+  const [selectedRepIndex, setSelectedRepIndex] = useState(0);
+  const [repName, setRepName] = useState("");
+  const [repPhone, setRepPhone] = useState("");
+  const [repEmail, setRepEmail] = useState("");
+
+  // Initialize fields when modal opens or customer selection changes
+  useEffect(() => {
+    if (isOpen) {
+      handleClientChange(0);
+    }
+  }, [isOpen]);
+
+  const handleClientChange = (index: number) => {
+    setSelectedClientIndex(index);
+    const client = CLIENT_COMPANIES[index];
+    if (client) {
+      setCompanyName(client.companyName);
+      setCompanyPhone(client.phone);
+      setCompanyEmail(client.email);
+
+      // Pre-select first rep
+      if (client.reps && client.reps.length > 0) {
+        handleRepChange(0, client.reps);
+      } else {
+        setSelectedRepIndex(-1);
+        setRepName("");
+        setRepPhone("");
+        setRepEmail("");
+      }
+    }
+  };
+
+  const handleRepChange = (repIdx: number, repsList?: ClientRep[]) => {
+    setSelectedRepIndex(repIdx);
+    const list = repsList || CLIENT_COMPANIES[selectedClientIndex].reps;
+    const rep = list[repIdx];
+    if (rep) {
+      setRepName(rep.name);
+      setRepPhone(rep.phone);
+      setRepEmail(rep.email);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -83,54 +225,80 @@ export default function NewReceivingModal({ isOpen, onClose }: NewReceivingModal
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
                 <div>
-                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Customer Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="Select customer..."
-                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <label className="block text-[13px] font-bold text-slate-700 mb-2">Customer Profile</label>
+                  <select 
+                    value={selectedClientIndex}
+                    onChange={(e) => handleClientChange(parseInt(e.target.value) || 0)}
+                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer"
+                  >
+                    {CLIENT_COMPANIES.map((company, index) => (
+                      <option key={index} value={index}>{company.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Company</label>
+                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Company Name (Autofilled)</label>
                   <input 
                     type="text" 
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
                     placeholder="Company name"
-                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-medium text-slate-700 shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Phone</label>
+                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Company Phone</label>
                   <input 
                     type="text" 
+                    value={companyPhone}
+                    onChange={(e) => setCompanyPhone(e.target.value)}
                     placeholder="+1 (xxx) xxx-xxxx"
-                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-655 shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Email</label>
+                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Company Email</label>
                   <input 
                     type="text" 
+                    value={companyEmail}
+                    onChange={(e) => setCompanyEmail(e.target.value)}
                     placeholder="contact@company.com"
-                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-655 shadow-sm"
                   />
                 </div>
               </div>
 
               <h3 className="text-[15px] font-bold text-slate-800 mb-5">Representative</h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
                 <div>
-                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Rep Name</label>
+                  <label className="block text-[13px] font-bold text-slate-700 mb-2">Rep Name</label>
+                  <select 
+                    value={selectedRepIndex}
+                    onChange={(e) => handleRepChange(parseInt(e.target.value) || 0)}
+                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-750 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer"
+                  >
+                    {CLIENT_COMPANIES[selectedClientIndex]?.reps.map((rep, idx) => (
+                      <option key={idx} value={idx}>{rep.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Rep Phone (Autofilled)</label>
                   <input 
                     type="text" 
-                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    value={repPhone}
+                    onChange={(e) => setRepPhone(e.target.value)}
+                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-semibold text-slate-700 shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Rep Phone</label>
+                  <label className="block text-[13px] font-medium text-slate-700 mb-2">Rep Email (Autofilled)</label>
                   <input 
                     type="text" 
-                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    value={repEmail}
+                    onChange={(e) => setRepEmail(e.target.value)}
+                    className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-semibold text-slate-700 shadow-sm"
                   />
                 </div>
               </div>
@@ -158,6 +326,7 @@ export default function NewReceivingModal({ isOpen, onClose }: NewReceivingModal
                   <input 
                     type="text" 
                     placeholder="PO-2026-XXX"
+                    defaultValue="PO-2026-041"
                     className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -166,6 +335,7 @@ export default function NewReceivingModal({ isOpen, onClose }: NewReceivingModal
                   <input 
                     type="text" 
                     placeholder="CC-HOU-XXX"
+                    defaultValue="CC-HOU-101"
                     className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -173,6 +343,7 @@ export default function NewReceivingModal({ isOpen, onClose }: NewReceivingModal
                   <label className="block text-[13px] font-medium text-slate-700 mb-2">Due Date</label>
                   <input 
                     type="text" 
+                    defaultValue="May 01, 2026"
                     className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -180,6 +351,7 @@ export default function NewReceivingModal({ isOpen, onClose }: NewReceivingModal
                   <label className="block text-[13px] font-medium text-slate-700 mb-2">Priority</label>
                   <input 
                     type="text" 
+                    defaultValue="High"
                     className="block w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -191,7 +363,11 @@ export default function NewReceivingModal({ isOpen, onClose }: NewReceivingModal
                 {["Epoxy", "Polyester", "Hybrid", "Urethane", "Polyurethane"].map((paint) => (
                   <button 
                     key={paint}
-                    className="px-4 py-2 border border-slate-200 rounded-xl text-[13px] font-medium text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                    className={`px-4 py-2 border rounded-xl text-[13px] font-medium transition-colors ${
+                      paint === "Epoxy" 
+                        ? "bg-blue-600 border-blue-600 text-white font-bold" 
+                        : "border-slate-200 text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300"
+                    }`}
                   >
                     {paint}
                   </button>

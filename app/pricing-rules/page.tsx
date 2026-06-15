@@ -9,13 +9,60 @@ export default function PricingRulesPage() {
   const [activeTab, setActiveTab] = useState("pricing_tables");
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [exportInvoice, setExportInvoice] = useState<any>(null);
+  
+  // Pricing states
+  const [selectedCustomer, setSelectedCustomer] = useState("ABC Steel Corp");
+  const [pricingCategory, setPricingCategory] = useState("tubing");
 
   const pipePricing = [
     { size: '2"', price: "$3.50", rush: "$5.25" },
+    { size: '3"', price: "$4.25", rush: "$6.38" },
     { size: '4"', price: "$5.00", rush: "$7.50" },
     { size: '6"', price: "$7.50", rush: "$11.25" },
     { size: '8"', price: "$10.00", rush: "$15.00" },
+    { size: '10"', price: "$12.00", rush: "$18.00" },
     { size: '12"', price: "$14.00", rush: "$21.00" },
+    { size: '14"', price: "$16.50", rush: "$24.75" },
+    { size: '16"', price: "$19.00", rush: "$28.50" },
+    { size: '18"', price: "$22.00", rush: "$33.00" },
+    { size: '20"', price: "$25.00", rush: "$37.50" },
+    { size: '22"', price: "$28.00", rush: "$42.00" },
+    { size: '24"', price: "$32.00", rush: "$48.00" },
+  ];
+
+  const fittingsPricing = [
+    { size: '2"', price: "$15.00", rush: "$22.50" },
+    { size: '3"', price: "$18.50", rush: "$27.75" },
+    { size: '4"', price: "$22.00", rush: "$33.00" },
+    { size: '6"', price: "$30.00", rush: "$45.00" },
+    { size: '8"', price: "$40.00", rush: "$60.00" },
+    { size: '10"', price: "$55.00", rush: "$82.50" },
+    { size: '12"', price: "$70.00", rush: "$105.00" },
+    { size: '14"+', price: "$95.00", rush: "$142.50" },
+  ];
+
+  const flangesPricing = [
+    { size: '2"', price: "$25.00", rush: "$37.50" },
+    { size: '3"', price: "$32.00", rush: "$48.00" },
+    { size: '4"', price: "$45.00", rush: "$67.50" },
+    { size: '6"', price: "$60.00", rush: "$90.00" },
+    { size: '8"', price: "$80.00", rush: "$120.00" },
+    { size: '10"', price: "$110.00", rush: "$165.00" },
+    { size: '12"', price: "$140.00", rush: "$210.00" },
+    { size: '14"+', price: "$180.00", rush: "$270.00" },
+  ];
+
+  const laborPricing = [
+    { service: "Grinding & Prep", rate: "$28.00 / hr", unit: "Per Worker Hour" },
+    { service: "Sandblasting Labor", rate: "$45.00 / hr", unit: "Per Hour" },
+    { service: "Custom Masking", rate: "$35.00 / hr", unit: "Per Hour" },
+    { service: "DFT & Quality Inspection", rate: "$50.00 / hr", unit: "Per Hour" },
+    { service: "Propane Heating Surcharge", rate: "$75.00 / run", unit: "Per Oven Cycle" },
+  ];
+
+  const customersList = [
+    "ABC Steel Corp", "Metro Fab LLC", "Gulf Coast Ind.", "Lone Star Mfg", 
+    "Tex-Mex Metals", "Iron Works TX", "Southern Steels", "Coastal Pipeline"
   ];
 
   const invoicesData = [
@@ -102,59 +149,177 @@ export default function PricingRulesPage() {
         <div className="animate-in fade-in duration-300">
           
           {/* Controls */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <span className="text-[13px] font-bold text-slate-700">Customer:</span>
-              <select className="border border-slate-200 rounded-lg px-3 py-1.5 text-[13px] text-slate-700 focus:outline-none focus:border-blue-500 bg-white shadow-sm min-w-[140px]">
-                <option></option>
+              <select 
+                value={selectedCustomer}
+                onChange={(e) => setSelectedCustomer(e.target.value)}
+                className="border border-slate-200 rounded-lg px-3 py-1.5 text-[13px] text-slate-700 font-bold focus:outline-none focus:border-blue-500 bg-white shadow-sm min-w-[180px]"
+              >
+                {customersList.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
-            <button className="flex items-center px-4 py-2 border border-slate-200 rounded-full text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+
+            {/* Sub Tabs for Pricing Categories */}
+            <div className="bg-slate-100 p-1 rounded-xl flex gap-1 border border-slate-200/50">
+              {[
+                { id: "tubing", label: "Tubing (ft)" },
+                { id: "fittings", label: "Fittings (ea)" },
+                { id: "flanges", label: "Flanges (ea)" },
+                { id: "labor", label: "Labor & Service" }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setPricingCategory(cat.id)}
+                  className={`px-4 py-1.5 rounded-lg text-[12px] font-bold transition-all ${
+                    pricingCategory === cat.id 
+                      ? "bg-white text-blue-600 shadow-sm border-transparent" 
+                      : "text-slate-500 hover:text-slate-750"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            <button className="flex items-center px-4 py-2 border border-slate-200 rounded-full text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm self-end sm:self-auto">
               <Edit2 size={14} className="mr-2 text-slate-500" />
-              Edit Pricing
+              Edit Pricing Sheet
             </button>
           </div>
 
-          {/* Pricing Table Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm mb-6">
-            <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white">
-              <h2 className="text-[16px] font-bold text-slate-900">Pipe Diameter Pricing (per linear foot)</h2>
-              <span className="text-[13px] text-slate-400 font-medium">Rush multiplier: 1.5x</span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50">
-                    <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pipe Size</th>
-                    <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Price Per Foot</th>
-                    <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rush Price (x1.5)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {pipePricing.map((item, index) => (
-                    <tr key={index} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.size}</td>
-                      <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.price}</td>
-                      <td className="py-4 px-6 text-[13px] font-bold text-orange-500">{item.rush}</td>
+          {/* Dynamic Pricing Table Card */}
+          {pricingCategory === "tubing" && (
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm mb-6 animate-in fade-in duration-200">
+              <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white">
+                <h2 className="text-[15px] font-bold text-slate-900">Tubing / Pipe Diameter Coating Rates ({selectedCustomer})</h2>
+                <span className="text-[12px] text-slate-400 font-semibold">Rush multiplier: 1.5x</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pipe Size (Diameter)</th>
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Price Per Foot (Standard)</th>
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rush Price (x1.5 Surcharge)</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {pipePricing.map((item, index) => (
+                      <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.size}</td>
+                        <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.price}</td>
+                        <td className="py-4 px-6 text-[13px] font-bold text-orange-500">{item.rush}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
+
+          {pricingCategory === "fittings" && (
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm mb-6 animate-in fade-in duration-200">
+              <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white">
+                <h2 className="text-[15px] font-bold text-slate-900">Fittings Coating Rates ({selectedCustomer})</h2>
+                <span className="text-[12px] text-slate-400 font-semibold">Tee, 90°, 45°, Reducers, Caps</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Fitting Size (Diameter)</th>
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Price Per Piece (Standard)</th>
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rush Price (x1.5)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {fittingsPricing.map((item, index) => (
+                      <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.size}</td>
+                        <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.price}</td>
+                        <td className="py-4 px-6 text-[13px] font-bold text-orange-500">{item.rush}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {pricingCategory === "flanges" && (
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm mb-6 animate-in fade-in duration-200">
+              <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white">
+                <h2 className="text-[15px] font-bold text-slate-900">Flanges Coating Rates ({selectedCustomer})</h2>
+                <span className="text-[12px] text-slate-400 font-semibold">Series #150 / #300 baseline</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Flange Size</th>
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Price Per Piece (Standard)</th>
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rush Price (x1.5)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {flangesPricing.map((item, index) => (
+                      <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.size}</td>
+                        <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.price}</td>
+                        <td className="py-4 px-6 text-[13px] font-bold text-orange-500">{item.rush}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {pricingCategory === "labor" && (
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm mb-6 animate-in fade-in duration-200">
+              <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white">
+                <h2 className="text-[15px] font-bold text-slate-900">Labor, Masking & Extra Services</h2>
+                <span className="text-[12px] text-slate-400 font-semibold">Side billing & secondary billing items</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Service / Task Name</th>
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rate</th>
+                      <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Unit of Measure</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {laborPricing.map((item, index) => (
+                      <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.service}</td>
+                        <td className="py-4 px-6 text-[13px] font-bold text-slate-900">{item.rate}</td>
+                        <td className="py-4 px-6 text-[13px] text-slate-500">{item.unit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Bottom Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-              <span className="block text-[12px] font-medium text-slate-400 mb-1">Flanges (per unit)</span>
-              <span className="block text-[18px] font-bold text-slate-900">$45.00</span>
+              <span className="block text-[12px] font-medium text-slate-400 mb-1">Standard Series Markup</span>
+              <span className="block text-[18px] font-bold text-slate-900">+25% for Series 600+</span>
             </div>
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-              <span className="block text-[12px] font-medium text-slate-400 mb-1">Grinding (per hour)</span>
-              <span className="block text-[18px] font-bold text-slate-900">$28.00</span>
+              <span className="block text-[12px] font-medium text-slate-400 mb-1">Oven Running Cost</span>
+              <span className="block text-[18px] font-bold text-slate-900">$75.00 / oven run</span>
             </div>
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-              <span className="block text-[12px] font-medium text-slate-400 mb-1">Minimum Order</span>
+              <span className="block text-[12px] font-medium text-slate-400 mb-1">Minimum Order Threshold</span>
               <span className="block text-[18px] font-bold text-slate-900">$250.00</span>
             </div>
           </div>

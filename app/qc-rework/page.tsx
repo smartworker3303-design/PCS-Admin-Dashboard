@@ -295,10 +295,19 @@ export default function QCReworkPage() {
                   <td className="px-6 py-4 text-[13px] text-red-500 font-medium">{row.reason}</td>
                   <td className="px-6 py-4 text-[13px] text-slate-700">{row.supervisor}</td>
                   <td className="px-6 py-4">
-                    <input 
-                      type="text" 
-                      className="w-16 h-8 border border-slate-200 rounded-lg px-2 text-[12px] focus:outline-none focus:border-blue-500 transition-colors"
-                    />
+                    <select 
+                      className="w-32 h-8 border border-slate-200 rounded-lg px-2 text-[12px] focus:outline-none focus:border-blue-500 transition-colors bg-white font-medium text-slate-700"
+                      defaultValue="Sandblasting"
+                    >
+                      <option value="Receiving">Receiving</option>
+                      <option value="Pre-Blast">Pre-Blast</option>
+                      <option value="Sandblasting">Sandblasting</option>
+                      <option value="Primer">Primer</option>
+                      <option value="Coating">Coating</option>
+                      <option value="Oven">Oven</option>
+                      <option value="DFT">DFT</option>
+                      <option value="QC">QC</option>
+                    </select>
                   </td>
                   <td className="px-6 py-4">
                     <button className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors shadow-sm">

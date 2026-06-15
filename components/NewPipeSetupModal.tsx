@@ -19,13 +19,92 @@ const FLANGE_SERIES_COLUMNS = ['150', '300', '600', '900', '1500', '3000'] as co
 export default function NewPipeSetupModal({ isOpen, onClose }: NewPipeSetupModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
 
+  // Powder coating defaults definition
+  const POWDER_COATING_DEFAULTS: Record<string, {
+    external: string;
+    internal: string;
+    primer: boolean;
+    thickness: string;
+    spec: string;
+    standard: string;
+    applicability: string[];
+  }> = {
+    Epoxy: {
+      external: "Epoxy Powder Coat",
+      internal: "Epoxy Liquid Liner",
+      primer: true,
+      thickness: "3.0",
+      spec: "ASTM D3359",
+      standard: "SSPC-PA2",
+      applicability: ["External", "Internal"]
+    },
+    Polyester: {
+      external: "Polyester Powder TGIC",
+      internal: "None",
+      primer: false,
+      thickness: "2.5",
+      spec: "AAMA 2604",
+      standard: "SSPC-PA1",
+      applicability: ["External"]
+    },
+    Urethane: {
+      external: "Urethane Polyester",
+      internal: "None",
+      primer: true,
+      thickness: "2.0",
+      spec: "ASTM G62",
+      standard: "SSPC-PA2",
+      applicability: ["External", "Flange"]
+    },
+    Hybrid: {
+      external: "Epoxy-Polyester Hybrid",
+      internal: "None",
+      primer: false,
+      thickness: "2.8",
+      spec: "ISO 12944",
+      standard: "SSPC-PA10",
+      applicability: ["External", "Flange"]
+    },
+    FBE: {
+      external: "Fusion Bonded Epoxy",
+      internal: "Fusion Bonded Epoxy Liner",
+      primer: true,
+      thickness: "12.0",
+      spec: "NACE SP0394",
+      standard: "CSA Z245.20",
+      applicability: ["External", "Internal", "Flange"]
+    }
+  };
+
   // State variables for interactive controls
   const [pipeType, setPipeType] = useState<string>("Tubing");
   const [primerRequired, setPrimerRequired] = useState<boolean>(true);
-  const [coatingApplicability, setCoatingApplicability] = useState<string[]>(["External", "Flange"]);
+  const [coatingApplicability, setCoatingApplicability] = useState<string[]>(["External", "Internal"]);
   const [applySetupTo, setApplySetupTo] = useState<string>("All Parts");
   const [processTemplate, setProcessTemplate] = useState<string>("Standard Epoxy - Full Process");
   const [autoAssignPipeIds, setAutoAssignPipeIds] = useState<boolean>(true);
+
+  // Coating specs controlled states
+  const [powderCoatingType, setPowderCoatingType] = useState<string>("Epoxy");
+  const [externalCoatingType, setExternalCoatingType] = useState<string>("Epoxy Powder Coat");
+  const [internalCoatingType, setInternalCoatingType] = useState<string>("Epoxy Liquid Liner");
+  const [requiredMilThickness, setRequiredMilThickness] = useState<string>("3.0");
+  const [customerSpecification, setCustomerSpecification] = useState<string>("ASTM D3359");
+  const [coatingStandard, setCoatingStandard] = useState<string>("SSPC-PA2");
+
+  const handlePowderCoatingTypeChange = (type: string) => {
+    setPowderCoatingType(type);
+    const defaults = POWDER_COATING_DEFAULTS[type];
+    if (defaults) {
+      setExternalCoatingType(defaults.external);
+      setInternalCoatingType(defaults.internal);
+      setPrimerRequired(defaults.primer);
+      setRequiredMilThickness(defaults.thickness);
+      setCustomerSpecification(defaults.spec);
+      setCoatingStandard(defaults.standard);
+      setCoatingApplicability(defaults.applicability);
+    }
+  };
 
   const toggleCoatingApplicability = (val: string) => {
     if (coatingApplicability.includes(val)) {
@@ -211,7 +290,7 @@ export default function NewPipeSetupModal({ isOpen, onClose }: NewPipeSetupModal
                 <h3 className="text-[17px] font-bold text-slate-900">Pipe Details</h3>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 mb-6">
                 <div>
                   <label className="block text-[13px] font-medium text-slate-700 mb-1.5">System Part ID</label>
                   <input type="text" placeholder="e.g. P-2241" className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:border-blue-500" />
@@ -221,39 +300,29 @@ export default function NewPipeSetupModal({ isOpen, onClose }: NewPipeSetupModal
                   <input type="text" placeholder="e.g. CP-001" className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:border-blue-500" />
                 </div>
                 
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Pipe Description</label>
                   <input type="text" placeholder='e.g. 6" Carbon Steel Pipe' className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:border-blue-500" />
                 </div>
-                <div>
-                  <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Welder Info</label>
-                  <input type="text" placeholder="e.g. W. Johnson — Cert #2234" className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] placeholder-slate-400 focus:outline-none focus:border-blue-500" />
-                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 mb-6">
-                <div>
-                  <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Pipe Type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["Tubing", "Fittings", "Flanges", "Fabrication"].map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setPipeType(type)}
-                        className={
-                          pipeType === type
-                            ? "bg-blue-600 text-white font-medium py-2 rounded-[10px] text-[13px] shadow-sm cursor-pointer"
-                            : "bg-white border border-slate-200 text-slate-600 font-medium py-2 rounded-[10px] text-[13px] hover:bg-slate-50 transition-colors cursor-pointer"
-                        }
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Material Type</label>
-                  <input type="text" placeholder="e.g. Carbon Steel" className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500" />
+              <div className="mb-6">
+                <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Pipe Type</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {["Tubing", "Fittings", "Flanges", "Fabrication"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setPipeType(type)}
+                      className={
+                        pipeType === type
+                          ? "bg-blue-600 text-white font-medium py-2 rounded-[10px] text-[13px] shadow-sm cursor-pointer"
+                          : "bg-white border border-slate-200 text-slate-600 font-medium py-2 rounded-[10px] text-[13px] hover:bg-slate-50 transition-colors cursor-pointer"
+                      }
+                    >
+                      {type}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -623,15 +692,46 @@ export default function NewPipeSetupModal({ isOpen, onClose }: NewPipeSetupModal
                 </div>
                 <h3 className="text-[17px] font-bold text-slate-900">Coating Specification</h3>
               </div>
+
+              {/* Powder Coating Preset Buttons */}
+              <div className="mb-6 border border-slate-100 rounded-2xl p-5 bg-slate-50/50">
+                <label className="block text-[13px] font-bold text-slate-800 mb-3">Powder Coating Type (Pre-fills spec defaults)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  {["Epoxy", "Polyester", "Urethane", "Hybrid", "FBE"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => handlePowderCoatingTypeChange(type)}
+                      className={
+                        powderCoatingType === type
+                          ? "bg-blue-650 text-white font-bold py-2.5 rounded-[10px] text-[13px] shadow-md border border-blue-650 cursor-pointer text-center"
+                          : "bg-white border border-slate-200 text-slate-600 font-semibold py-2.5 rounded-[10px] text-[13px] hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer text-center"
+                      }
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 mb-4">
                 <div>
                   <label className="block text-[13px] font-medium text-slate-700 mb-1.5">External Coating Type</label>
-                  <input type="text" className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500" />
+                  <input 
+                    type="text" 
+                    value={externalCoatingType}
+                    onChange={(e) => setExternalCoatingType(e.target.value)}
+                    className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500" 
+                  />
                 </div>
                 <div>
                   <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Internal Coating Type</label>
-                  <input type="text" className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500" />
+                  <input 
+                    type="text" 
+                    value={internalCoatingType}
+                    onChange={(e) => setInternalCoatingType(e.target.value)}
+                    className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500" 
+                  />
                 </div>
               </div>
 
@@ -666,7 +766,12 @@ export default function NewPipeSetupModal({ isOpen, onClose }: NewPipeSetupModal
                 <div>
                   <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Required Mil Thickness</label>
                   <div className="relative">
-                    <input type="text" defaultValue="3.0" className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500 pr-10" />
+                    <input 
+                      type="text" 
+                      value={requiredMilThickness}
+                      onChange={(e) => setRequiredMilThickness(e.target.value)}
+                      className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500 pr-10" 
+                    />
                     <span className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[13px] text-slate-400">
                       mil
                     </span>
@@ -677,11 +782,21 @@ export default function NewPipeSetupModal({ isOpen, onClose }: NewPipeSetupModal
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 mb-5">
                 <div>
                   <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Customer Specification</label>
-                  <input type="text" defaultValue="ASTM D3359" className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500" />
+                  <input 
+                    type="text" 
+                    value={customerSpecification}
+                    onChange={(e) => setCustomerSpecification(e.target.value)}
+                    className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500" 
+                  />
                 </div>
                 <div>
                   <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Coating Standard</label>
-                  <input type="text" defaultValue="SSPC-PA2" className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500" />
+                  <input 
+                    type="text" 
+                    value={coatingStandard}
+                    onChange={(e) => setCoatingStandard(e.target.value)}
+                    className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:border-blue-500" 
+                  />
                 </div>
               </div>
 
@@ -710,12 +825,12 @@ export default function NewPipeSetupModal({ isOpen, onClose }: NewPipeSetupModal
                 <div className="bg-[#eff6ff] border border-blue-100 rounded-[14px] p-5">
                   <h4 className="text-[12px] font-bold text-blue-700 mb-3">Coating Summary</h4>
                   <div className="grid grid-cols-2 gap-y-2.5 gap-x-4">
-                    <p className="text-[12px] text-slate-500">External: <span className="font-bold text-slate-900">{coatingApplicability.includes("External") ? "Epoxy" : "None"}</span></p>
-                    <p className="text-[12px] text-slate-500">Internal: <span className="font-bold text-slate-900">{coatingApplicability.includes("Internal") ? "Yes" : "None"}</span></p>
+                    <p className="text-[12px] text-slate-500">External: <span className="font-bold text-slate-900">{coatingApplicability.includes("External") ? externalCoatingType || "Yes" : "None"}</span></p>
+                    <p className="text-[12px] text-slate-500">Internal: <span className="font-bold text-slate-900">{coatingApplicability.includes("Internal") ? internalCoatingType || "Yes" : "None"}</span></p>
                     <p className="text-[12px] text-slate-500">Primer: <span className="font-bold text-slate-900">{primerRequired ? "Yes" : "No"}</span></p>
-                    <p className="text-[12px] text-slate-500">Min Thickness: <span className="font-bold text-slate-900">3.0 mil</span></p>
-                    <p className="text-[12px] text-slate-500">Standard: <span className="font-bold text-slate-900">SSPC-PA2</span></p>
-                    <p className="text-[12px] text-slate-500">Spec: <span className="font-bold text-slate-900">ASTM D3359</span></p>
+                    <p className="text-[12px] text-slate-500">Min Thickness: <span className="font-bold text-slate-900">{requiredMilThickness} mil</span></p>
+                    <p className="text-[12px] text-slate-500">Standard: <span className="font-bold text-slate-900">{coatingStandard}</span></p>
+                    <p className="text-[12px] text-slate-500">Spec: <span className="font-bold text-slate-900">{customerSpecification}</span></p>
                   </div>
                 </div>
 

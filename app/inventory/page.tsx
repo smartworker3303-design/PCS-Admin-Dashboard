@@ -11,6 +11,7 @@ export default function InventoryPage() {
   const [poItem, setPoItem] = useState<any>(null);
   const [stockItem, setStockItem] = useState<any>(null);
   const [isAddNewOpen, setIsAddNewOpen] = useState(false);
+  const [addCategory, setAddCategory] = useState("powder_coating");
 
   const chartData = [
     { date: "Apr 15", blue: 40, purple: 28, green: 20 },
@@ -38,7 +39,16 @@ export default function InventoryPage() {
           <p className="text-[14px] text-slate-500 mt-0.5">4 low stock alerts across all branches</p>
         </div>
         <button 
-          onClick={() => setIsAddNewOpen(true)}
+          onClick={() => {
+            if (activeTab === "powder_inventory") {
+              setAddCategory("powder_coating");
+            } else if (activeTab === "propane_tracking") {
+              setAddCategory("propane");
+            } else {
+              setAddCategory("other");
+            }
+            setIsAddNewOpen(true);
+          }}
           className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-[13px] font-bold transition-colors shadow-sm flex items-center"
         >
           <span className="mr-1.5 text-lg leading-none">+</span> Add Inventory
@@ -253,6 +263,7 @@ export default function InventoryPage() {
       <InventoryAddNewModal 
         isOpen={isAddNewOpen} 
         onClose={() => setIsAddNewOpen(false)} 
+        defaultCategory={addCategory}
       />
 
     </div>
