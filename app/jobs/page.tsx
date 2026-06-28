@@ -32,9 +32,21 @@ export default function JobsTickets() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
   const [ticketsData, setTicketsData] = useState(tickets);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSaveTicket = (updatedTicket: any) => {
     setTicketsData(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
+  };
+
+  const getCompletionPercentage = (status: string) => {
+    switch (status) {
+      case "Completed": return 100;
+      case "QC Check": return 90;
+      case "In Progress": return 60;
+      case "Active": return 35;
+      case "Delayed": return 35;
+      default: return 10;
+    }
   };
 
   return (
@@ -42,17 +54,17 @@ export default function JobsTickets() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Jobs / Tickets</h1>
-          <p className="text-sm text-slate-500">12 tickets found</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Jobs / Tickets Registry</h1>
+          <p className="text-sm text-slate-500">{ticketsData.length} active tickets found</p>
         </div>
-        <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-          <button className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto">
+        <div className="flex items-center space-x-3">
+          <button className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
             <Download size={16} className="mr-2" />
             Export
           </button>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto"
+            className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
           >
             <Plus size={16} className="mr-2" />
             New Ticket
@@ -68,108 +80,114 @@ export default function JobsTickets() {
           </div>
           <input
             type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+            className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors font-medium"
             placeholder="Search ticket ID or customer..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         
         <div className="flex w-full sm:w-auto items-center gap-3 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-          <div className="h-9 w-24 sm:w-28 border border-slate-200 rounded-lg bg-slate-50 shrink-0"></div>
-          <div className="h-9 w-24 sm:w-28 border border-slate-200 rounded-lg bg-slate-50 shrink-0"></div>
-          <div className="h-9 w-24 sm:w-28 border border-slate-200 rounded-lg bg-slate-50 shrink-0"></div>
-          
           <button className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 whitespace-nowrap">
             <Filter size={16} className="mr-2" />
-            Advanced
+            Advanced Filter
           </button>
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto no-scrollbar">
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="text-xs text-slate-500 uppercase bg-white border-b border-slate-100">
               <tr>
-                <th scope="col" className="px-6 py-4 font-medium flex items-center">
+                <th scope="col" className="px-6 py-4 font-bold flex items-center">
                   TICKET ID <ChevronDown size={14} className="ml-1 opacity-50" />
                 </th>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  CUSTOMER <ChevronDown size={14} className="ml-1 opacity-50 inline" />
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  PARTS <ChevronDown size={14} className="ml-1 opacity-50 inline" />
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  STATUS <ChevronDown size={14} className="ml-1 opacity-50 inline" />
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  BRANCH <ChevronDown size={14} className="ml-1 opacity-50 inline" />
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  SUPERVISOR <ChevronDown size={14} className="ml-1 opacity-50 inline" />
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  DATE <ChevronDown size={14} className="ml-1 opacity-50 inline" />
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium">
-                  AMOUNT <ChevronDown size={14} className="ml-1 opacity-50 inline" />
-                </th>
-                <th scope="col" className="px-6 py-4 font-medium">ACTIONS</th>
+                <th scope="col" className="px-6 py-4 font-bold">CUSTOMER</th>
+                <th scope="col" className="px-6 py-4 font-bold">PARTS</th>
+                <th scope="col" className="px-6 py-4 font-bold">STATUS</th>
+                <th scope="col" className="px-6 py-4 font-bold text-center">PROJECT COMP. %</th>
+                <th scope="col" className="px-6 py-4 font-bold">BRANCH</th>
+                <th scope="col" className="px-6 py-4 font-bold">SUPERVISOR</th>
+                <th scope="col" className="px-6 py-4 font-bold">DATE</th>
+                <th scope="col" className="px-6 py-4 font-bold">AMOUNT</th>
+                <th scope="col" className="px-6 py-4 font-bold text-right">ACTIONS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {ticketsData.map((ticket, index) => (
-                <tr key={index} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4 font-semibold text-blue-600">
-                    {ticket.id}
-                  </td>
-                  <td className="px-6 py-4 font-semibold text-slate-800">
-                    {ticket.customer}
-                  </td>
-                  <td className="px-6 py-4 text-slate-500">
-                    {ticket.parts}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${ticket.statusColor}`}>
-                      {ticket.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-slate-500">
-                    {ticket.branch}
-                  </td>
-                  <td className="px-6 py-4 text-slate-500">
-                    {ticket.supervisor}
-                  </td>
-                  <td className="px-6 py-4 text-slate-500">
-                    {ticket.date}
-                  </td>
-                  <td className="px-6 py-4 font-bold text-slate-800">
-                    {ticket.amount}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-3 text-slate-400">
-                      <button className="hover:text-blue-600 transition-colors"><Eye size={16} /></button>
-                      <button 
-                        onClick={() => setEditingTicket(ticket)}
-                        className="hover:text-blue-600 transition-colors"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button className="hover:text-blue-600 transition-colors"><GitBranch size={16} /></button>
-                      <button className="hover:text-blue-600 transition-colors"><Maximize2 size={16} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {ticketsData
+                .filter(t => t.id.toLowerCase().includes(searchQuery.toLowerCase()) || t.customer.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((ticket, index) => {
+                  const pct = getCompletionPercentage(ticket.status);
+                  return (
+                    <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-blue-600">
+                        {ticket.id}
+                      </td>
+                      <td className="px-6 py-4 font-bold text-slate-800">
+                        {ticket.customer}
+                      </td>
+                      <td className="px-6 py-4 text-slate-500 font-medium">
+                        {ticket.parts}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 text-[11px] font-bold rounded-full ${ticket.statusColor}`}>
+                          {ticket.status}
+                        </span>
+                      </td>
+                      
+                      {/* Project Completion Progress Meter (Q15 feature implementation) */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 justify-center">
+                          <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0">
+                            <div 
+                              className={`h-full rounded-full ${pct === 100 ? "bg-emerald-500" : "bg-blue-600"}`} 
+                              style={{ width: `${pct}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-600">
+                            {pct}%
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-slate-500 font-medium">
+                        {ticket.branch}
+                      </td>
+                      <td className="px-6 py-4 text-slate-500 font-semibold">
+                        {ticket.supervisor}
+                      </td>
+                      <td className="px-6 py-4 text-slate-500">
+                        {ticket.date}
+                      </td>
+                      <td className="px-6 py-4 font-bold text-slate-900">
+                        {ticket.amount}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end space-x-3 text-slate-400">
+                          <button className="hover:text-blue-600 p-1 hover:bg-slate-100 rounded transition-colors"><Eye size={16} /></button>
+                          <button 
+                            onClick={() => setEditingTicket(ticket)}
+                            className="hover:text-blue-600 p-1 hover:bg-slate-100 rounded transition-colors"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button className="hover:text-blue-600 p-1 hover:bg-slate-100 rounded transition-colors"><GitBranch size={16} /></button>
+                          <button className="hover:text-blue-600 p-1 hover:bg-slate-100 rounded transition-colors"><Maximize2 size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
         
         {/* Pagination Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-          <div className="text-sm text-slate-500">
-            Showing 1-8 of 12 tickets
+          <div className="text-sm text-slate-505">
+            Showing 1-{ticketsData.length} of {ticketsData.length} tickets
           </div>
           <div className="flex items-center space-x-1">
             <button className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
@@ -177,9 +195,6 @@ export default function JobsTickets() {
             </button>
             <button className="w-8 h-8 rounded-lg bg-blue-600 text-white font-medium flex items-center justify-center text-sm">
               1
-            </button>
-            <button className="w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 font-medium flex items-center justify-center text-sm transition-colors">
-              2
             </button>
             <button className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
               <ChevronRight size={18} />

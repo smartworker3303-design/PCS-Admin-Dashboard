@@ -9,15 +9,17 @@ interface CreateInvoiceModalProps {
 interface InvoiceLineItem {
   id: string;
   type: "coating" | "non-coating";
-  coatingItemType: "Tubing" | "Flange" | "Fitting";
+  coatingItemType: "Tubing" | "Flange" | "Fitting" | "Fabrication";
   diameter: string;
   description: string;
   poNumber: string;
-  quantity: number;
+  quantity: number; // Total footage for Tubing, or count/hours for others
+  coatedQuantity?: number; // Coated footage (billed) for Tubing
   unitPrice: number;
   cost: number;
   markupPercent: number;
   taxable: boolean;
+  isLineRush: boolean;
 }
 
 const DIAMETERS = [
@@ -41,16 +43,32 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
       diameter: '6"',
       description: '6" Tubing Powder Coating',
       poNumber: "",
-      quantity: 120,
+      quantity: 100, // Total 100 ft
+      coatedQuantity: 40, // Coated 40 ft (billed)
       unitPrice: 7.50,
       cost: 0,
       markupPercent: 0,
       taxable: true,
+      isLineRush: false,
+    },
+    {
+      id: "2",
+      type: "coating",
+      coatingItemType: "Flange",
+      diameter: '6"',
+      description: '6" Flange Powder Coating',
+      poNumber: "",
+      quantity: 4,
+      unitPrice: 45.00,
+      cost: 0,
+      markupPercent: 0,
+      taxable: true,
+      isLineRush: true,
     }
   ]);
 
-  // Pricing lookups
-  const getCoatingDefaultPrice = (itemType: "Tubing" | "Flange" | "Fitting", diameter: string): number => {
+  // Pricing lookups based on new classification rules
+  const getCoatingDefaultPrice = (itemType: "Tubing" | "Flange" | "Fitting" | "Fabrication", diameter: string): number => {
     const size = parseFloat(diameter.replace('"', '')) || 0;
     if (itemType === "Tubing") {
       const prices: Record<number, number> = {
@@ -64,12 +82,14 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
       };
       if (size >= 14) return 180.00;
       return prices[size] || 45.00;
-    } else { // Fitting
+    } else if (itemType === "Fitting") {
       const prices: Record<number, number> = {
         2: 15.00, 3: 18.50, 4: 22.00, 6: 30.00, 8: 40.00, 10: 55.00, 12: 70.00
       };
       if (size >= 14) return 95.00;
       return prices[size] || 25.00;
+    } else { // Fabrication
+      return 35.00; // Hourly default fabrication/grinding rate
     }
   };
 
@@ -81,11 +101,13 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
       diameter: '6"',
       description: '6" Tubing Powder Coating',
       poNumber: "",
-      quantity: 1,
+      quantity: 100, // Default total footage
+      coatedQuantity: 100, // Default coated footage
       unitPrice: 7.50,
       cost: 0,
       markupPercent: 0,
       taxable: true,
+      isLineRush: false,
     };
     setLineItems([...lineItems, newItem]);
   };
@@ -96,13 +118,14 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
       type: "non-coating",
       coatingItemType: "Tubing", // unused
       diameter: '6"', // unused
-      description: "Custom Fabrication Labor",
-      poNumber: "PO-SIDE-100",
+      description: "PCS Internal PO Billing Sync",
+      poNumber: "PCS-PO-041",
       quantity: 1,
-      unitPrice: 0, // calculated from cost and markup
+      unitPrice: 180.00, // calculated from cost * markup
       cost: 150.00,
-      markupPercent: 20, // 20% default markup
+      markupPercent: 20, // 20% markup automatically flows to customer
       taxable: false,
+      isLineRush: false,
     };
     setLineItems([...lineItems, newItem]);
   };
@@ -122,7 +145,15 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
         const type = updates.coatingItemType || item.coatingItemType;
         const diam = updates.diameter || item.diameter;
         merged.unitPrice = getCoatingDefaultPrice(type, diam);
-        merged.description = `${diam} ${type} Powder Coating`;
+        merged.description = type === "Fabrication" 
+          ? "Hourly Fabrication & Grinding Labor"
+          : `${diam} ${type} Powder Coating`;
+          
+        if (type !== "Tubing") {
+          merged.coatedQuantity = undefined;
+        } else if (merged.coatedQuantity === undefined) {
+          merged.coatedQuantity = merged.quantity;
+        }
       }
 
       // Re-trigger non-coating price if cost or markup changes
@@ -138,11 +169,18 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
 
   // Calculations
   const calculateLineTotal = (item: InvoiceLineItem): number => {
+    const lineRushMultiplier = (isRush || item.isLineRush) ? 1.5 : 1.0;
+    
     if (item.type === "coating") {
-      const baseTotal = item.quantity * item.unitPrice;
-      return baseTotal * (isRush ? 1.5 : 1.0);
+      // If Tubing, charge only for the Coated Footage. Otherwise charge by Quantity
+      const billableQty = item.coatingItemType === "Tubing" 
+        ? (item.coatedQuantity !== undefined ? item.coatedQuantity : item.quantity)
+        : item.quantity;
+        
+      const baseTotal = billableQty * item.unitPrice;
+      return baseTotal * lineRushMultiplier;
     } else {
-      // Non-coating: Cost + Markup
+      // Non-coating (Internal Purchase PO charges)
       const baseCost = item.cost * (1 + item.markupPercent / 100);
       return item.quantity * baseCost;
     }
@@ -174,7 +212,7 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
       ></div>
 
       {/* Modal */}
-      <div className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-[900px] flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-[1000px] flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="px-8 py-5 bg-white z-10 sticky top-0 flex justify-between items-center border-b border-slate-100 shrink-0">
@@ -238,16 +276,16 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
                 <button
                   type="button"
                   onClick={addCoatingItem}
-                  className="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-100 px-3.5 py-1.5 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                  className="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-100 px-3.5 py-1.5 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-xs"
                 >
-                  <Plus size={14} /> Add Coating Item
+                  <Plus size={14} /> Add Coating/Fab Item
                 </button>
                 <button
                   type="button"
                   onClick={addNonCoatingItem}
-                  className="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-100 px-3.5 py-1.5 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                  className="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-100 px-3.5 py-1.5 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-xs"
                 >
-                  <Plus size={14} /> Add Side Billing
+                  <Plus size={14} /> Link Internal PO Charge
                 </button>
               </div>
             </div>
@@ -263,114 +301,161 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
                 <table className="w-full text-left border-collapse text-[13px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-150 text-[11px] text-slate-400 font-bold uppercase tracking-wider">
-                      <th className="py-3 px-4 w-[40%]">Item Details</th>
-                      <th className="py-3 px-4 w-[15%]">Qty / footage</th>
-                      <th className="py-3 px-4 w-[25%]">Price Config</th>
-                      <th className="py-3 px-4 w-[10%] text-center">Tax</th>
+                      <th className="py-3 px-4 w-[35%]">Classification & Size</th>
+                      <th className="py-3 px-4 w-[25%]">Quantity / Footage</th>
+                      <th className="py-3 px-4 w-[20%]">Price Config</th>
+                      <th className="py-3 px-4 w-[8%] text-center">Rush</th>
+                      <th className="py-3 px-4 w-[6%] text-center">Tax</th>
                       <th className="py-3 px-4 w-[10%] text-right">Total</th>
                       <th className="py-3 px-4 w-[5%]"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {lineItems.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
+                      <tr key={item.id} className="hover:bg-slate-50/30 transition-colors bg-white">
                         
-                        {/* Item Description / Config */}
+                        {/* Classification Details */}
                         <td className="py-3 px-4">
                           {item.type === "coating" ? (
                             <div className="flex items-center gap-2">
                               <select 
                                 value={item.coatingItemType}
                                 onChange={(e) => updateItem(item.id, { coatingItemType: e.target.value as any })}
-                                className="border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 font-bold text-[12px] focus:outline-none focus:border-blue-500 shadow-sm"
+                                className="border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 font-bold text-[12px] focus:outline-none focus:border-blue-500 shadow-sm cursor-pointer animate-in fade-in"
                               >
                                 <option value="Tubing">Tubing (ft)</option>
                                 <option value="Flange">Flange (ea)</option>
                                 <option value="Fitting">Fitting (ea)</option>
+                                <option value="Fabrication">Fabrication (hr)</option>
                               </select>
 
-                              <select 
-                                value={item.diameter}
-                                onChange={(e) => updateItem(item.id, { diameter: e.target.value })}
-                                className="border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 font-bold text-[12px] focus:outline-none focus:border-blue-500 shadow-sm"
-                              >
-                                {DIAMETERS.map(d => (
-                                  <option key={d} value={d}>{d}</option>
-                                ))}
-                              </select>
+                              {item.coatingItemType !== "Fabrication" ? (
+                                <select 
+                                  value={item.diameter}
+                                  onChange={(e) => updateItem(item.id, { diameter: e.target.value })}
+                                  className="border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 font-bold text-[12px] focus:outline-none focus:border-blue-500 shadow-sm cursor-pointer"
+                                >
+                                  {DIAMETERS.map(d => (
+                                    <option key={d} value={d}>{d}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-slate-400 text-xs italic">N/A</span>
+                              )}
                             </div>
                           ) : (
-                            <div className="flex flex-col gap-1.5">
+                            <div className="flex flex-col gap-1">
                               <input 
                                 type="text"
                                 value={item.description}
                                 onChange={(e) => updateItem(item.id, { description: e.target.value })}
                                 placeholder="Non-coating item description"
-                                className="w-full border border-slate-200 rounded-lg px-2.5 py-1 text-[12px] focus:outline-none focus:border-blue-500 font-semibold text-slate-700 shadow-sm"
+                                className="w-full border border-slate-200 rounded-lg px-2.5 py-1 text-[12px] focus:outline-none focus:border-blue-500 font-bold text-slate-700 shadow-sm"
                               />
-                              <input 
-                                type="text"
-                                value={item.poNumber}
-                                onChange={(e) => updateItem(item.id, { poNumber: e.target.value })}
-                                placeholder="Side Billing PO#"
-                                className="w-40 border border-slate-200 rounded-lg px-2.5 py-0.5 text-[10px] focus:outline-none focus:border-blue-500 font-medium text-slate-400 bg-slate-50 shadow-sm"
-                              />
+                              <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                                Linked PCS PO: 
+                                <input 
+                                  type="text"
+                                  value={item.poNumber}
+                                  onChange={(e) => updateItem(item.id, { poNumber: e.target.value })}
+                                  className="border-b border-transparent hover:border-emerald-300 bg-transparent px-1 py-0 text-[10px] w-24 focus:outline-none focus:border-emerald-500 font-mono"
+                                />
+                              </span>
                             </div>
                           )}
                         </td>
 
-                        {/* Quantity / Footage */}
+                        {/* Quantity / Footage (Tubing features total & coated footage) */}
                         <td className="py-3 px-4">
-                          <input 
-                            type="number"
-                            min="1"
-                            step="any"
-                            value={item.quantity}
-                            onChange={(e) => updateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
-                            className="w-20 border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 font-semibold focus:outline-none focus:border-blue-500 shadow-sm text-center"
-                          />
+                          {item.type === "coating" && item.coatingItemType === "Tubing" ? (
+                            <div className="flex items-center gap-1.5 animate-in fade-in">
+                              <div className="flex flex-col">
+                                <span className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Total Ft</span>
+                                <input 
+                                  type="number"
+                                  min="0"
+                                  value={item.quantity}
+                                  onChange={(e) => updateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
+                                  className="w-18 border border-slate-200 rounded-lg px-1.5 py-1 bg-white text-slate-500 font-semibold focus:outline-none focus:border-blue-500 text-center text-xs"
+                                />
+                              </div>
+                              <span className="text-slate-400 mt-3 font-semibold">/</span>
+                              <div className="flex flex-col">
+                                <span className="text-[9px] text-emerald-600 font-bold uppercase mb-0.5">Coated Ft</span>
+                                <input 
+                                  type="number"
+                                  min="0"
+                                  value={item.coatedQuantity}
+                                  onChange={(e) => updateItem(item.id, { coatedQuantity: parseFloat(e.target.value) || 0 })}
+                                  className="w-18 border border-emerald-250 rounded-lg px-1.5 py-1 bg-emerald-50 text-emerald-700 font-bold focus:outline-none focus:border-emerald-500 text-center text-xs"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col">
+                              <span className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">
+                                {item.coatingItemType === "Fabrication" ? "Hours" : "Count"}
+                              </span>
+                              <input 
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => updateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
+                                className="w-20 border border-slate-200 rounded-lg px-2.5 py-1 bg-white text-slate-700 font-bold focus:outline-none focus:border-blue-500 text-center text-xs shadow-xs"
+                              />
+                            </div>
+                          )}
                         </td>
 
                         {/* Price Calculations */}
                         <td className="py-3 px-4">
                           {item.type === "coating" ? (
                             <div className="relative">
-                              <span className="absolute inset-y-0 left-2.5 flex items-center text-slate-400 font-medium text-[12px]">$</span>
+                              <span className="absolute inset-y-0 left-2.5 flex items-center text-slate-400 font-bold text-[11px]">$</span>
                               <input 
                                 type="number"
                                 min="0"
                                 step="any"
                                 value={item.unitPrice}
                                 onChange={(e) => updateItem(item.id, { unitPrice: parseFloat(e.target.value) || 0 })}
-                                className="w-full border border-slate-200 rounded-lg pl-6 pr-2 py-1 bg-white text-slate-700 font-semibold focus:outline-none focus:border-blue-500 shadow-sm"
+                                className="w-full border border-slate-200 rounded-lg pl-6 pr-2 py-1 bg-white text-slate-700 font-bold focus:outline-none focus:border-blue-500 text-xs shadow-sm"
                               />
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1.5">
-                              <div className="relative w-24">
-                                <span className="absolute inset-y-0 left-2 flex items-center text-slate-400 text-[10px] font-bold">Cost</span>
+                            <div className="flex items-center gap-1">
+                              <div className="relative w-22">
+                                <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-[8px] font-bold uppercase">Cost</span>
                                 <input 
                                   type="number"
                                   min="0"
                                   step="any"
                                   value={item.cost}
                                   onChange={(e) => updateItem(item.id, { cost: parseFloat(e.target.value) || 0 })}
-                                  className="w-full border border-slate-200 rounded-lg pl-9 pr-1.5 py-1 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-sm"
+                                  className="w-full border border-slate-200 rounded-lg pl-8 pr-1 py-1 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-sm"
                                 />
                               </div>
-                              <div className="relative w-20">
-                                <span className="absolute inset-y-0 right-2 flex items-center text-slate-400 text-[10px] font-bold">%</span>
+                              <div className="relative w-18">
+                                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-[8px] font-bold uppercase">%</span>
                                 <input 
                                   type="number"
                                   min="0"
                                   value={item.markupPercent}
                                   onChange={(e) => updateItem(item.id, { markupPercent: parseInt(e.target.value) || 0 })}
-                                  className="w-full border border-slate-200 rounded-lg pl-1.5 pr-5 py-1 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-sm text-center"
-                                  title="Markup Percent"
+                                  className="w-full border border-slate-200 rounded-lg pl-1 pr-4 py-1 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-sm text-center"
                                 />
                               </div>
                             </div>
                           )}
+                        </td>
+
+                        {/* Rush Switch for Line Items */}
+                        <td className="py-3 px-4 text-center">
+                          <input 
+                            type="checkbox"
+                            checked={item.isLineRush}
+                            onChange={(e) => updateItem(item.id, { isLineRush: e.target.checked })}
+                            className="w-4 h-4 rounded border-slate-200 text-orange-500 focus:ring-orange-550 cursor-pointer"
+                          />
                         </td>
 
                         {/* Tax Exemption Checkbox */}
@@ -411,13 +496,13 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex justify-between items-center border border-slate-250/60 rounded-xl p-4 bg-white shadow-sm">
               <div>
-                <span className="text-[13px] font-bold text-slate-800 block">Rush Order (1.5x coating surcharge)</span>
+                <span className="text-[13px] font-bold text-slate-800 block">Rush Order Status (Global 1.5x)</span>
                 <span className="text-[11px] text-slate-400 block mt-0.5">Applies 1.5x multiplier to all coating item prices</span>
               </div>
               <div 
                 onClick={() => setIsRush(!isRush)}
                 className={`w-10 h-6 rounded-full flex items-center px-1 cursor-pointer transition-all shadow-inner ${
-                  isRush ? "bg-blue-600 justify-end" : "bg-slate-200 justify-start"
+                  isRush ? "bg-orange-500 justify-end" : "bg-slate-200 justify-start"
                 }`}
               >
                 <div className="w-4 h-4 bg-white rounded-full shadow-sm"></div>
@@ -426,8 +511,8 @@ export default function CreateInvoiceModal({ isOpen, onClose }: CreateInvoiceMod
 
             <div className="flex justify-between items-center border border-slate-250/60 rounded-xl p-4 bg-[#f8fafc] shadow-sm">
               <div>
-                <span className="text-[13px] font-bold text-slate-800 block">Markup Default Status</span>
-                <span className="text-[11px] text-slate-400 block mt-0.5">Forces markup rules on non-coating purchases</span>
+                <span className="text-[13px] font-bold text-slate-800 block">Force Internal PO Markup Synced</span>
+                <span className="text-[11px] text-slate-400 block mt-0.5">Flows all Linked PO charges immediately onto billing card</span>
               </div>
               <div 
                 onClick={() => setIsPOMarkup(!isPOMarkup)}

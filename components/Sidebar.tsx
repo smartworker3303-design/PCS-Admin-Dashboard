@@ -32,6 +32,7 @@ const operations = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Jobs / Tickets", href: "/jobs", icon: FileText },
   { name: "Receiving", href: "/receiving", icon: Package },
+  { name: "Carts Tracking", href: "/carts", icon: ShoppingCart },
   { name: "Pipe Process Setup", href: "/pipe-process", icon: Settings },
   { name: "Process Templates", href: "/process-templates", icon: Files },
   { name: "QC & Rework", href: "/qc-rework", icon: ClipboardCheck },
